@@ -155,6 +155,16 @@
       justify-content: space-between;
       margin-bottom: 4px;
     }
+.right-tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;              /* khoảng cách giữa giờ và nút */
+}
+
+.clock-time {
+  font-family: Consolas, monospace;
+  font-size: 13px;
+}
 
     h1 {
       flex: 1;
@@ -321,10 +331,14 @@
 
     <!-- Trang 1: Tra HS code (giống y như hiện tại) -->
     <section id="page-hs">
-      <div class="content-header">
-        <h1>Tra cứu HS code</h1>
-        <button id="newChat" class="new-chat">New chat</button>
-      </div>
+<div class="content-header">
+  <h1>Tra cứu HS code</h1>
+
+  <div class="right-tools">
+    <span id="clockTime" class="clock-time">--:--:--</span>
+    <button id="newChat" class="new-chat">New chat</button>
+  </div>
+</div>
 
       <p class="intro">
         Nhập mô tả hàng hóa, hệ thống sẽ gợi ý mã HS.
@@ -924,6 +938,24 @@ const menuTraHsBtn = document.getElementById('menu-tra-hs');
 const menuRulesBtn = document.getElementById('menu-rules');
 const pageHs = document.getElementById('page-hs');
 const pageRules = document.getElementById('page-rules');
+const clockTime = document.getElementById('clockTime');
+// Cập nhật giờ thực
+function updateClock() {
+  if (!clockTime) return;
+  const now = new Date();
+
+  const timeStr = now.toLocaleTimeString('vi-VN', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
+  });
+
+  clockTime.textContent = timeStr;
+}
+
+// Gọi ngay lúc load + mỗi giây
+updateClock();
+setInterval(updateClock, 1000);
 
     // Popup OK
     const popupOverlay = document.getElementById('popupOverlay');
@@ -1005,11 +1037,11 @@ ruleToggles.forEach((btnToggle) => {
       result.textContent = 'Đang tra...';
 
       try {
-        const res = await fetch('https://YOUR_N8N_DOMAIN/webhook/hs-code-bot', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ description: text })
-        });
+const res = await fetch('https://lataiworld.app.n8n.cloud/webhook-test/9e8496cd-7eca-4e06-b5bc-3aff2860eb0d', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ description: text })
+});
 
         if (!res.ok) {
           throw new Error('API trả lỗi status ' + res.status);
