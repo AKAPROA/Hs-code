@@ -1120,11 +1120,12 @@ btn.addEventListener('click', async () => {
 
   try {
     // 3) Gửi sang webhook n8n của bạn
-    const res = await fetch('https://lataiworld.app.n8n.cloud/webhook/9e8496cd-7eca-4e06-b5bc-3aff2860eb0d', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ description: text })
-    });
+// 3) Gửi sang webhook n8n của bạn
+const res = await fetch('https://lataiworld.app.n8n.cloud/webhook/hs-code-webhook', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ description: text })
+});
 
     if (!res.ok) {
       throw new Error('API trả lỗi status ' + res.status);
