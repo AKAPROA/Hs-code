@@ -3,9 +3,1044 @@
 <head>
   <meta charset="UTF-8" />
   <title>Tra cứu HS code (demo)</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+    }
+
+    .app {
+      min-height: 100vh;
+    }
+
+    /* ===== SIDEBAR TRƯỢT BÊN TRÁI ===== */
+    .sidebar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 260px;
+      height: 100vh;
+      background: #f5f5f5;
+      padding: 16px 14px;
+      box-shadow: 2px 0 8px rgba(0, 0, 0, 0.15);
+      transform: translateX(-100%);
+      transition: transform 0.3s ease;
+      z-index: 1000;
+    }
+
+    .sidebar.open {
+      transform: translateX(0);
+    }
+
+    .sidebar h2 {
+      margin-top: 0;
+      font-size: 18px;
+      margin-bottom: 10px;
+    }
+
+    .menu-root {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      font-size: 14px;
+    }
+
+    .menu-section {
+      margin-bottom: 10px;
+    }
+
+    .menu-parent {
+      width: 100%;
+      text-align: left;
+      border: none;
+      background: transparent;
+      font: inherit;
+      padding: 6px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      display: block;
+    }
+
+    .menu-parent:hover {
+      background: #e0e0e0;
+    }
+
+    .menu-children {
+      list-style: none;
+      margin: 4px 0 0;
+      padding-left: 18px;
+    }
+
+    .menu-children li {
+      margin-bottom: 4px;
+    }
+
+    .menu-item {
+      width: 100%;
+      text-align: left;
+      border: none;
+      background: transparent;
+      font: inherit;
+      padding: 4px 6px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .menu-item:hover {
+      background: #e9e9e9;
+    }
+
+/* Nút 3 gạch */
+.hamburger {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  width: 34px;
+  height: 28px;
+  padding: 5px 4px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  background: #ffffff;
+  cursor: pointer;
+  z-index: 1100;
+  transition: left 0.3s ease;  /* để nó trượt mượt theo sidebar */
+}
+
+.hamburger span {
+  display: block;
+  height: 3px;
+  width: 100%;
+  background: #333;
+  border-radius: 2px;
+}
+
+/* 👉 thêm block MỚI này ngay sau .hamburger span */
+.app.sidebar-open .hamburger {
+  /* 260px (rộng sidebar) - 34px (rộng nút) - 16px (khoảng cách với mép phải) */
+  left: calc(260px - 34px - 16px);
+}
+
+    .hamburger span {
+      display: block;
+      height: 3px;
+      width: 100%;
+      background: #333;
+      border-radius: 2px;
+    }
+
+    /* Nội dung chính */
+    .main {
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 60px 20px 40px;
+    }
+
+    .content {
+      width: 100%;
+      max-width: 720px;
+    }
+
+    .content-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 4px;
+    }
+
+    h1 {
+      flex: 1;
+      margin: 0;
+      text-align: center;
+      text-transform: uppercase;    /* TRA CỨU HS CODE */
+      font-size: 28px;
+    }
+
+    .new-chat {
+      margin-left: 12px;
+      padding: 6px 10px;
+      font-size: 13px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+      background: #fafafa;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .intro {
+      margin-top: 6px;
+      margin-bottom: 10px;
+      font-size: 14px;
+    }
+
+    textarea {
+      width: 100%;
+    }
+
+    #result {
+      margin-top: 16px;
+      white-space: pre-wrap;
+      font-family: Consolas, monospace;
+      font-size: 13px;
+    }
+
+    /* ===== POPUP Ở GIỮA MÀN HÌNH ===== */
+    .popup-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.35);
+      display: none;               /* ẩn mặc định */
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+    }
+
+    .popup-box {
+      background: #ffffff;
+      padding: 18px 20px;
+      border-radius: 8px;
+      max-width: 360px;
+      width: calc(100% - 40px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+      font-size: 14px;
+      text-align: center;
+    }
+
+    .popup-btn {
+      margin-top: 14px;
+      padding: 6px 14px;
+      border-radius: 4px;
+      border: none;
+      background: #4caf50;
+      color: #fff;
+      cursor: pointer;
+      font-size: 13px;
+    }    /* ===== PHẦN SÁU QUY TẮC ===== */
+    .rule-list {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .rule-toggle {
+      width: 100%;
+      text-align: left;
+      padding: 8px 10px;
+      margin-top: 8px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+      background: #f8f8f8;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 14px;
+    }
+
+    .rule-toggle.active {
+      background: #e0e0e0;
+    }
+
+    .rule-panel {
+      display: none;
+      margin-top: 8px;
+      padding: 10px 12px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      background: #ffffff;
+    }
+
+    /* Bảng song ngữ cho từng quy tắc */
+    .rule-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 8px;
+      font-size: 13px;
+    }
+
+    .rule-table th,
+    .rule-table td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      vertical-align: top;
+    }
+
+    .rule-table th {
+      background: #f3f3f3;
+    }
+
+  </style>
 </head>
 <body>
-  <h1>Tra cứu HS code</h1>
-  <p>Web demo kết nối n8n sau.</p>
+  <div class="app">
+    <!-- Nút 3 gạch -->
+    <button id="toggleSidebar" class="hamburger" aria-label="Mở menu">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+
+    <!-- SIDEBAR BÊN TRÁI -->
+    <aside id="sidebar" class="sidebar">
+      <h2>Menu</h2>
+      <nav class="menu">
+        <ul class="menu-root">
+          <li class="menu-section">
+            <button type="button" class="menu-parent" id="menu-tra-hs">
+              1/ Tra HS code
+            </button>
+            <ul class="menu-children">
+              <li><button type="button" class="menu-item">a/ Hướng dẫn sử dụng</button></li>
+              <li><button type="button" class="menu-item">b/ Biểu thuế</button></li>
+              <li><button type="button" class="menu-item">c/ Chú giải SEN</button></li>
+              <li><button type="button" class="menu-item">d/ Chú giải HS code</button></li>
+<li><button type="button" class="menu-item" id="menu-rules">e/ Sáu quy tắc HS code</button></li>
+            </ul>
+          </li>
+
+          <li class="menu-section">
+            <button type="button" class="menu-parent" id="menu-policy">
+              2/ Check chính sách mặt hàng
+            </button>
+          </li>
+        </ul>
+      </nav>
+    </aside>
+
+    <!-- NỘI DUNG CHÍNH -->
+<main class="main">
+  <div class="content">
+
+    <!-- Trang 1: Tra HS code (giống y như hiện tại) -->
+    <section id="page-hs">
+      <div class="content-header">
+        <h1>Tra cứu HS code</h1>
+        <button id="newChat" class="new-chat">New chat</button>
+      </div>
+
+      <p class="intro">
+        Nhập mô tả hàng hóa, hệ thống sẽ gợi ý mã HS.
+      </p>
+
+      <textarea id="desc" rows="5" placeholder="Nhập mô tả hàng hóa..."></textarea>
+      <br />
+      <button id="btn">Tra cứu</button>
+
+      <pre id="result"></pre>
+    </section>
+
+    <!-- Trang 2: Sáu quy tắc HS code (tạm demo, lát nữa làm bảng đẹp & chèn ảnh) -->
+<section id="page-rules" style="display:none;">
+  <h1 style="text-align:center; font-size:24px; margin-top:0;">
+    Sáu quy tắc phân loại HS code
+  </h1>
+
+  <div class="rule-list">
+    <!-- NÚT QUY TẮC 1 -->
+    <button type="button" class="rule-toggle" data-target="rule1">
+      Quy tắc 1 – Phân loại hàng hóa dựa trên nội dung nhóm và chú giải liên quan
+    </button>
+
+    <!-- KHỐI NỘI DUNG QUY TẮC 1 (mở / đóng) -->
+<div id="rule1" class="rule-panel">
+  <p><strong>QUY TẮC 1</strong></p>
+  <p>
+    Tên của Phần, Chương hoặc Phân chương được đưa ra chỉ nhằm mục đích dễ tra cứu.
+    Để đảm bảo tính pháp lý, việc phân loại hàng hóa phải được xác định theo nội dung
+    của từng nhóm và bất cứ chú giải của các Phần, Chương liên quan và theo các quy tắc
+    dưới đây nếu các nhóm hoặc các Chú giải đó không có yêu cầu nào khác.
+  </p>
+
+  <p><strong>CHÚ GIẢI QUY TẮC 1</strong></p>
+
+  <p>
+    (I) Hàng hóa trong thương mại quốc tế được sắp xếp một cách có hệ thống trong Danh mục
+    của Hệ thống hài hòa theo các Phần, Chương và Phân chương. Tên của Phần, Chương và
+    Phân chương được ghi ngắn gọn, súc tích để chỉ ra loại hoặc chủng loại hàng hóa được xếp
+    trong đó. Tuy nhiên, trong nhiều trường hợp vì sự đa dạng của chủng loại và số lượng hàng hóa
+    nên tên các phần, chương không thể bao trùm hết toàn bộ hoặc liệt kê hết các hàng hóa
+    trong đề mục đó.
+  </p>
+
+  <p>
+    (II) Ngay đầu Quy tắc 1 quy định rằng những tên đề mục “chỉ nhằm mục đích dễ tra cứu”.
+    Điều đó có nghĩa là tên các phần, chương và phân chương không có giá trị pháp lý trong
+    việc phân loại hàng hóa.
+  </p>
+
+  <p>
+    (III) Phần thứ hai của Quy tắc này quy định rằng việc phân loại hàng hóa được xác định theo:
+    <br>(a) nội dung của nhóm hàng và bất cứ chú giải Phần hoặc Chương nào có liên quan, và
+    <br>(b) các quy định tại các Quy tắc 2, 3, 4 và 5 khi nội dung nhóm hàng hoặc các Chú giải
+    không có yêu cầu nào khác.
+  </p>
+
+  <p>
+    (IV) Mục (III) (a) của Quy tắc 1 đã nêu rõ rằng nhiều hàng hóa được phân loại trong Danh mục
+    mà không cần xem xét thêm bất cứ Quy tắc giải thích nào (ví dụ, ngựa sống (nhóm 01.01),
+    dược phẩm được nêu cụ thể trong Chú giải 4 của Chương 30 (nhóm 30.06)).
+  </p>
+
+  <p>
+    (V) Trong chú giải Quy tắc 1 Phần (III) (b):
+    <br>(a) Khái niệm “khi nội dung nhóm hàng hoặc các Chú giải không có yêu cầu nào khác”
+    là nhằm khẳng định rằng nội dung của nhóm hàng và bất kỳ chú giải Phần hoặc Chương nào
+    có liên quan có giá trị tối cao, nghĩa là chúng phải được xem xét trước tiên khi phân loại.
+    Ví dụ, ở Chương 31, các chú giải nêu rằng các nhóm nhất định chỉ liên quan đến những hàng hóa
+    nhất định. Vì vậy, những nhóm hàng đó không được mở rộng cho những mặt hàng khác bằng việc
+    áp dụng Quy tắc 2 (b).
+    <br>(b) Liên quan đến Quy tắc 2 tại khái niệm “theo các quy định tại các Quy tắc 2, 3, 4 và 5”
+    có nghĩa là:
+    <br>(1) hàng hóa ở dạng chưa hoàn chỉnh hoặc chưa hoàn thiện (ví dụ, một chiếc xe đạp mà không
+    có yên xe và lốp xe), và
+    <br>(2) hàng hóa ở dạng chưa lắp ráp hoặc tháo rời (ví dụ, một chiếc xe đạp, chưa lắp ráp hoặc
+    tháo rời, toàn bộ các thành phần được trình bày cùng nhau) mà các thành phần của chúng có thể
+    được phân loại riêng theo bản chất của chúng (ví dụ, lốp, săm) hoặc như là “các bộ phận” của
+    các hàng hóa đó,
+    <br>được phân loại như các mặt hàng này ở dạng hoàn chỉnh hoặc hoàn thiện, miễn là đáp ứng
+    các điều khoản của Quy tắc 2 (a) và nội dung nhóm hoặc Chú giải không có yêu cầu khác.
+  </p>
+</div>
+
+    <!-- SAU NÀY BẠN SẼ THÊM QUY TẮC 2,3,4,5,6 TƯƠNG TỰ -->
+    <!-- QUY TẮC 2 -->
+    <button type="button" class="rule-toggle" data-target="rule2">
+      Quy tắc 2 – Hàng chưa hoàn chỉnh, chưa lắp ráp; hỗn hợp, hợp chất
+    </button>
+    <div id="rule2" class="rule-panel">
+      <p><strong>QUY TẮC 2</strong></p>
+
+      <p>
+        (a) Một mặt hàng được phân loại vào một nhóm hàng thì mặt hàng đó ở dạng chưa hoàn chỉnh
+        hoặc chưa hoàn thiện cũng thuộc nhóm đó, nếu đã có đặc trưng cơ bản của hàng hóa đó khi đã
+        hoàn chỉnh hoặc hoàn thiện. Cũng phân loại như vậy đối với hàng hóa ở dạng hoàn chỉnh hay
+        hoàn thiện hoặc đã có đặc trưng cơ bản của hàng hóa ở dạng hoàn chỉnh hay hoàn thiện
+        (hoặc được phân loại vào dạng hàng hóa đã hoàn chỉnh hay hoàn thiện theo nội dung Quy tắc này),
+        nhưng chưa lắp ráp hoặc tháo rời.
+      </p>
+
+      <p>
+        (b) Một nguyên liệu, một chất được phân loại trong một nhóm nào đó thì hỗn hợp hay hợp chất
+        của nguyên liệu hoặc chất đó với những nguyên liệu hoặc chất khác cũng thuộc nhóm đó. Hàng hóa
+        làm toàn bộ bằng một loại nguyên liệu hay một chất, hoặc làm một phần bằng nguyên liệu hay
+        chất đó được phân loại trong cùng nhóm. Việc phân loại những hàng hóa làm bằng hai loại nguyên
+        liệu hay hai chất trở lên phải tuân theo Quy tắc 3.
+      </p>
+
+      <p><strong>CHÚ GIẢI QUY TẮC 2 (a)<br>
+        <em>(Các mặt hàng ở dạng chưa hoàn chỉnh hoặc chưa hoàn thiện)</em></strong>
+      </p>
+
+      <p>
+        (I) Phần đầu của Quy tắc 2 (a) đã mở rộng phạm vi của bất cứ nhóm nào liên quan tới một hàng hóa
+        nhất định không chỉ bao gồm hàng hóa đã hoàn chỉnh mà còn bao gồm hàng hóa đó ở dạng chưa hoàn
+        chỉnh hoặc chưa hoàn thiện nhưng đã có những đặc tính cơ bản của hàng đã hoàn chỉnh hoặc hoàn thiện.
+      </p>
+
+      <p>
+        (II) Nội dung của Quy tắc này cũng được áp dụng cho phôi ngoại trừ phôi đã được xác định tại một nhóm
+        cụ thể. Thuật ngữ “phôi” nghĩa là một mặt hàng, chưa sử dụng trực tiếp ngay được, có hình dạng hoặc
+        phác thảo gần giống với mặt hàng hoặc bộ phận đã hoàn chỉnh và những trường hợp này chỉ được dùng
+        để hoàn thiện thành những sản phẩm hoặc bộ phận hoàn chỉnh, ngoại trừ những trường hợp đặc biệt
+        (ví dụ, tạo hình dạng chai lọ bằng nhựa là sản phẩm trung gian có hình dạng ống, với một đầu đóng
+        và một đầu mở đã được ren để vặn kín, phần bên dưới của đầu đã được ren có thể mở rộng hoặc kéo dài
+        tới kích cỡ hoặc hình dạng mong muốn). Bán thành phẩm chưa có hình dạng cơ bản của mặt hàng đã hoàn
+        chỉnh (ví dụ thường là những hình ở dạng thanh, đĩa, ống…) không được gọi là “phôi”.
+      </p>
+
+      <p>
+        (III) Do phạm vi của các nhóm từ Phần I tới Phần VI, Quy tắc 2(a) thường không áp dụng đối với hàng hóa
+        thuộc những Phần này.
+      </p>
+
+      <p>
+        (IV) Một số trường hợp áp dụng Quy tắc 2(a) được nêu tại Chú giải tổng quát của Phần hoặc Chương
+        (ví dụ, Phần XVI, và Chương 61, 62, 86, 87 và 90).
+      </p>
+
+      <p><strong>CHÚ GIẢI QUY TẮC 2 (a)<br>
+        <em>(Các mặt hàng ở dạng chưa lắp ráp hoặc tháo rời)</em></strong>
+      </p>
+
+      <p>
+        (V) Phần thứ hai của Quy tắc 2(a) quy định rằng hàng hóa hoàn chỉnh hoặc hoàn thiện ở dạng chưa lắp ráp
+        hoặc dạng tháo rời được phân loại cùng nhóm với hàng hóa đó đã lắp ráp. Hàng hóa thường ở dạng này do yêu
+        cầu hoặc sự thuận tiện cho việc đóng gói, xếp dỡ hoặc vận chuyển.
+      </p>
+
+      <p>
+        (VI) Quy tắc này cũng áp dụng với hàng hóa chưa hoàn chỉnh hoặc chưa hoàn thiện, ở dạng chưa lắp ráp
+        hoặc tháo rời với điều kiện những mặt hàng này được phân loại như hàng hóa đã hoàn chỉnh hoặc hoàn thiện
+        theo phần đầu của Quy tắc này.
+      </p>
+
+      <p>
+        (VII) Theo mục đích của Quy tắc này, “hàng hóa ở dạng chưa lắp ráp hoặc tháo rời” là những hàng hóa mà bộ
+        phận của chúng sẽ được lắp ráp lại với nhau bằng các dụng cụ lắp ráp (vít, bu-lông, đai ốc, ê-cu,…), hoặc
+        ghép bằng đinh tán hoặc bằng cách hàn lại, với điều kiện những hoạt động này chỉ đơn thuần là lắp ráp.
+        Không tính đến sự phức tạp của phương pháp lắp ráp. Tuy nhiên, các bộ phận cấu thành không phải trải qua
+        bất cứ quá trình gia công nào khác để sản phẩm trở thành dạng hoàn thiện. Những bộ phận chưa lắp ráp thừa
+        ra về số lượng theo yêu cầu để hoàn thiện một mặt hàng thì sẽ được phân loại riêng.
+      </p>
+
+      <p>
+        (VIII) Những trường hợp áp dụng Quy tắc này được nêu trong các Chú giải tổng quát của Phần hoặc Chương
+        (ví dụ, Phần XVI, và Chương 44, 86, 87, và 89).
+      </p>
+
+      <p>
+        (IX) Do phạm vi của các nhóm từ Phần I tới Phần VI, Quy tắc này thường không áp dụng đối với hàng hóa thuộc
+        những Phần này.
+      </p>
+
+      <p><strong>CHÚ GIẢI QUY TẮC 2 (b)<br>
+        <em>(Hỗn hợp và hợp chất của các nguyên liệu hoặc các chất)</em></strong>
+      </p>
+
+      <p>
+        (X) Quy tắc 2(b) liên quan tới hỗn hợp và hợp chất của các nguyên liệu hoặc các chất, và hàng hóa bao gồm
+        từ hai nguyên liệu hoặc hai chất trở lên. Những nhóm mà Quy tắc này đề cập tới là những nhóm liên quan đến
+        một loại nguyên liệu hoặc chất (ví dụ, nhóm 05.07 - ngà voi), và các nhóm có liên quan đến những hàng hóa
+        được làm từ một nguyên liệu hoặc một chất nhất định (ví dụ, nhóm 45.03 - các sản phẩm bằng lie tự nhiên).
+        Chú ý rằng Quy tắc này chỉ áp dụng khi nội dung nhóm, Chú giải Phần hoặc Chương không có bất cứ yêu cầu nào
+        khác (ví dụ, nhóm 15.03 - dầu mỡ lợn, chưa... pha trộn). Những hỗn hợp ở dạng chế phẩm được mô tả trong
+        chú giải Phần hoặc Chương hoặc trong nội dung của nhóm thì phải được phân loại theo Quy tắc 1.
+      </p>
+
+      <p>
+        (XI) Quy tắc này mở rộng nhóm liên quan tới một nguyên liệu hoặc một chất cũng bao gồm hỗn hợp hoặc hợp chất
+        của nguyên liệu hoặc chất đó với các nguyên liệu hoặc chất khác. Quy tắc này cũng mở rộng phạm vi của các nhóm
+        hàng liên quan tới hàng hóa được làm từ một nguyên liệu hoặc một chất nhất định thì cũng bao gồm hàng hóa được
+        làm một phần từ nguyên liệu hoặc chất đó.
+      </p>
+
+      <p>
+        (XII) Tuy nhiên, Quy tắc này không mở rộng nhóm tới mức để nhóm đó bao gồm cả mặt hàng không đáp ứng mô tả của
+        nhóm, theo yêu cầu tại Quy tắc 1; điều này xảy ra khi có thêm một nguyên liệu hoặc một chất khác làm mất đi
+        đặc tính của hàng hóa đã được đề cập trong nhóm.
+      </p>
+
+      <p>
+        (XIII) Theo Quy tắc này, hỗn hợp và hợp chất của các nguyên liệu hoặc các chất, và hàng hóa được cấu thành từ
+        hai nguyên liệu hoặc hai chất trở lên, nếu thoạt nhìn qua có thể phân loại vào hai hoặc nhiều nhóm khác nhau,
+        thì phải được phân loại theo Quy tắc 3.
+      </p>
+    </div>
+        <!-- QUY TẮC 3 -->
+    <button type="button" class="rule-toggle" data-target="rule3">
+      Quy tắc 3 – Khi hàng có thể phân loại vào nhiều nhóm
+    </button>
+    <div id="rule3" class="rule-panel">
+      <p><strong>QUY TẮC 3</strong></p>
+
+      <p>
+        Khi áp dụng Quy tắc 2(b) hoặc vì bất cứ một lý do nào khác, hàng hóa thoạt nhìn
+        có thể phân loại vào hai hay nhiều nhóm, thì sẽ phân loại như sau:
+      </p>
+
+      <p>
+        (a) Nhóm có mô tả cụ thể nhất sẽ được ưu tiên hơn các nhóm có mô tả khái quát khi
+        thực hiện việc phân loại hàng hóa. Tuy nhiên, khi hai hay nhiều nhóm mà mỗi nhóm
+        chỉ liên quan đến một phần của nguyên liệu hoặc chất chứa trong hàng hóa là hỗn
+        hợp hay hợp chất, hoặc chỉ liên quan đến một phần của hàng hóa trong trường hợp
+        hàng hóa đó ở dạng bộ được đóng gói để bán lẻ, thì những nhóm này được coi như thể
+        hiện đặc trưng ngang nhau về những hàng hóa nói trên, ngay cả khi một trong số các
+        nhóm đó có mô tả đầy đủ hơn hoặc chính xác hơn về những hàng hóa đó.
+      </p>
+
+      <p>
+        (b) Những hàng hóa hỗn hợp bao gồm nhiều nguyên liệu khác nhau hoặc những hàng hóa
+        được làm từ nhiều bộ phận cấu thành khác nhau, và những hàng hóa ở dạng bộ để bán
+        lẻ, nếu không phân loại được theo Quy tắc 3(a), thì phân loại theo nguyên liệu hoặc
+        bộ phận cấu thành tạo ra đặc tính cơ bản của chúng, trong chừng mực tiêu chí này
+        được áp dụng.
+      </p>
+
+      <p>
+        (c) Khi hàng hóa không thể phân loại theo Quy tắc 3(a) hoặc 3(b) nêu trên thì phân
+        loại vào nhóm cuối cùng theo thứ tự đánh số trong số các nhóm tương đương được xem xét.
+      </p>
+
+      <p><strong>CHÚ GIẢI QUY TẮC 3</strong></p>
+
+      <p>
+        (I) Quy tắc này nêu lên 3 cách phân loại những hàng hóa mà thoạt nhìn có thể xếp vào
+        hai hay nhiều nhóm khác nhau khi áp dụng Quy tắc 2(b) hoặc trong những trường hợp khác.
+        Những cách này được áp dụng theo thứ tự được trình bày trong Quy tắc. Như vậy, Quy tắc 3(b)
+        chỉ được áp dụng khi không phân loại được theo Quy tắc 3(a), và chỉ áp dụng Quy tắc 3(c)
+        khi không phân loại được theo Quy tắc 3(a) và 3(b). Khi phân loại phải tuân theo thứ tự
+        như sau: a) nhóm hàng có mô tả cụ thể đặc trưng nhất; b) đặc tính cơ bản; c) nhóm được
+        xếp cuối cùng theo thứ tự đánh số.
+      </p>
+
+      <p>
+        (II) Quy tắc này chỉ được áp dụng khi nội dung các nhóm, chú giải của Phần hoặc Chương
+        không có yêu cầu nào khác. Ví dụ, Chú giải 4(B) Chương 97 yêu cầu rằng nếu hàng hóa đồng
+        thời vừa có trong mô tả của một trong các nhóm từ 97.01 đến 97.05, vừa đúng như mô tả của
+        nhóm 97.06 thì được phân loại vào một trong các nhóm đứng trước nhóm 97.06. Trong trường
+        hợp này hàng hóa được phân loại theo Chú giải 4(B) Chương 97 và không tuân theo Quy tắc 3.
+      </p>
+
+      <p><strong>CHÚ GIẢI QUY TẮC 3 (a)</strong></p>
+
+      <p>
+        (III) Cách phân loại thứ nhất được trình bày trong Quy tắc 3(a): nhóm mô tả cụ thể đặc
+        trưng nhất được ưu tiên hơn nhóm có mô tả khái quát.
+      </p>
+
+      <p>
+        (IV) Không thể đặt ra những quy tắc cứng nhắc để xác định một nhóm hàng này mô tả hàng hóa
+        một cách đặc trưng hơn một nhóm hàng khác, nhưng có thể nói tổng quát rằng:
+        <br>(a) Một nhóm hàng chỉ đích danh một mặt hàng cụ thể thì đặc trưng hơn nhóm hàng mô tả một
+        họ các mặt hàng (ví dụ, máy cạo râu và tông đơ có lắp động cơ điện được phân vào nhóm 85.10
+        mà không phải trong nhóm 84.67 là nhóm các dụng cụ cầm tay có lắp động cơ điện hoặc vào
+        nhóm 85.09 là các thiết bị cơ điện gia dụng có lắp động cơ điện).
+        <br>(b) Một nhóm nào đó được coi như đặc trưng hơn trong số các nhóm có thể phân loại cho một
+        mặt hàng nhập khẩu là khi nhóm đó xác định rõ hơn và kèm theo mô tả mặt hàng cụ thể, đầy đủ
+        hơn các nhóm khác.
+      </p>
+
+      <p>
+        Các ví dụ:
+        <br>(1) Mặt hàng thảm dệt đã tạo búi, được sử dụng trong xe ô tô, không được phân loại như là
+        phụ kiện của xe ô tô thuộc nhóm 87.08, trong nhóm 57.03 chúng được mô tả một cách đặc trưng
+        hơn như những tấm thảm. Do vậy, mặt hàng này được phân loại vào nhóm 57.03.
+        <br>(2) Mặt hàng kính an toàn chưa có khung, gồm kính tôi hoặc kính dán nhiều lớp, phù hợp sử
+        dụng trên máy bay nhưng chưa vượt quá mức tạo hình, không được phân loại vào nhóm 88.07 như
+        những bộ phận của hàng hóa thuộc nhóm 88.01, 88.02 hoặc 88.06 nhưng lại được phân loại trong
+        nhóm 70.07, nơi hàng hóa được mô tả đặc trưng hơn như loại hàng kính an toàn.
+      </p>
+
+      <p>
+        (V) Tuy nhiên, khi hai hay nhiều nhóm mà mỗi nhóm chỉ liên quan đến một phần những nguyên liệu
+        hoặc chất cấu thành sản phẩm hỗn hợp hoặc hợp chất, hoặc chỉ liên quan đến một phần trong bộ đóng
+        gói để bán lẻ, thì những nhóm đó được coi là cùng phản ánh tương đương đặc trưng của những hàng hóa
+        trên, ngay cả khi một trong số các nhóm ấy có mô tả chính xác hoặc đầy đủ hơn về những hàng hóa đó.
+        Trong trường hợp này, phân loại hàng hóa áp dụng Quy tắc 3(b) hoặc 3(c).
+      </p>
+
+      <p><strong>CHÚ GIẢI QUY TẮC 3 (b)</strong></p>
+
+      <p>
+        (VI) Cách phân loại theo Quy tắc 3(b) chỉ nhằm vào các trường hợp:
+        <br>(i) Sản phẩm hỗn hợp.
+        <br>(ii) Sản phẩm cấu tạo từ nhiều nguyên liệu khác nhau.
+        <br>(iii) Sản phẩm cấu tạo từ nhiều bộ phận cấu thành khác nhau.
+        <br>(iv) Hàng hóa được đóng gói ở dạng bộ để bán lẻ.
+        <br>Cách phân loại này chỉ áp dụng nếu không phân loại được theo Quy tắc 3(a).
+      </p>
+
+      <p>
+        (VII) Trong tất cả các trường hợp trên, hàng hóa được phân loại theo nguyên liệu hoặc cấu thành
+        tạo nên tính chất cơ bản của hàng hóa trong chừng mực tiêu chí này được áp dụng.
+      </p>
+
+      <p>
+        (VIII) Yếu tố xác định tính chất cơ bản của hàng hóa đa dạng theo các loại hàng hóa khác nhau.
+        Ví dụ, có thể xác định theo bản chất của nguyên liệu hoặc bộ phận cấu thành, theo thành phần,
+        kích thước, số lượng, trọng lượng, trị giá, hoặc theo vai trò của nguyên liệu cấu thành có liên
+        quan đến việc sử dụng hàng hóa.
+      </p>
+
+      <p>
+        (IX) Quy tắc 3(b) này được áp dụng cho những mặt hàng được cấu tạo từ những thành phần khác nhau,
+        không chỉ trong trường hợp những thành phần này gắn kết với nhau thành một tập hợp không thể tách
+        rời trong thực tế, mà cả khi những thành phần đó để rời nhau, nhưng với điều kiện những thành phần
+        này thích hợp với nhau và bổ sung cho nhau, tập hợp của chúng tạo thành một bộ mà thông thường không
+        thể được bán rời.
+      </p>
+
+      <p>
+        Có thể kể ra một số ví dụ về loại sản phẩm trên:
+        <br>(1) Mặt hàng gạt tàn thuốc gồm một cái giá khung trong đó có một cái cốc có thể tháo ra lắp vào
+        để đựng tàn thuốc.
+        <br>(2) Mặt hàng giá để gia vị dùng trong gia đình gồm có khung được thiết kế đặc biệt (thường bằng gỗ)
+        và một số lượng thích hợp các lọ gia vị có hình dáng và kích thước phù hợp.
+        <br>Thông thường, những thành phần khác nhau của tập hợp hàng hóa trên được đựng trong cùng bao bì.
+      </p>
+
+      <p>
+        (X) Theo Quy tắc 3(b) này, hàng hóa được coi như “ở dạng bộ được đóng gói để bán lẻ” phải có những
+        điều kiện sau:
+        <br>(a) phải có ít nhất hai loại hàng khác nhau, mà ngay từ ban đầu thoạt nhìn có thể xếp vào nhiều
+        nhóm hàng khác nhau. Ví dụ, sáu cái dĩa (nĩa) nấu ăn không thể coi là một bộ theo Quy tắc này, vì không
+        thể xếp sáu cái dĩa (nĩa) nấu ăn vào hai nhóm hàng;
+        <br>(b) gồm những sản phẩm hoặc hàng hóa được xếp đặt cùng nhau để đáp ứng một yêu cầu nhất định hoặc để
+        thực hiện một chức năng xác định; và
+        <br>(c) được xếp theo cách thích hợp để bán trực tiếp cho người sử dụng cuối cùng mà không cần đóng gói
+        tiếp (ví dụ, đóng gói trong hộp, tráp, hòm).
+      </p>
+
+      <p>
+        “Bán lẻ” không bao gồm việc bán các sản phẩm nhằm để bán lại sau khi sản xuất thêm, chế biến, đóng gói
+        lại hoặc kết hợp với hay kết hợp thành các sản phẩm khác. Do đó, thuật ngữ “hàng hóa ở dạng bộ được đóng
+        gói để bán lẻ” chỉ bao gồm những bộ hàng hóa nhằm để bán cho người sử dụng cuối cùng, tại đó các hàng hóa
+        đơn lẻ được sử dụng cùng nhau. Ví dụ, nhiều thực phẩm khác nhau nhằm sử dụng cùng nhau để chế biến một món
+        ăn hay bữa ăn ngay, đóng gói cùng nhau và nhằm mục đích được tiêu dùng bởi người mua sẽ được gọi là một
+        “bộ hàng được đóng gói để bán lẻ”.
+      </p>
+
+      <p>
+        Các ví dụ về bộ hàng có thể được phân loại theo Quy tắc 3(b) như sau:
+        <br>(1) (a) Bộ thực phẩm bao gồm bánh xăng đuých làm bằng thịt bò, có hoặc không có pho mát (nhóm 16.02),
+        được đóng gói với khoai tây chiên (nhóm 20.04): Phân loại vào nhóm 16.02.
+        <br>&nbsp;&nbsp;&nbsp;&nbsp;(b) Bộ thực phẩm dùng để nấu món Spaghetti (mỳ) gồm một hộp Spaghetti (mỳ) sống
+        (nhóm 19.02), một gói pho mát béo (nhóm 04.06) và một gói nhỏ sốt cà chua (nhóm 21.03), đựng trong một hộp
+        các-tông: Phân loại vào nhóm 19.02.
+      </p>
+
+      <p>
+        Tuy nhiên, Quy tắc này không bao gồm việc chọn các sản phẩm đóng cùng nhau, ví dụ:
+        <br>- 01 hộp tôm (nhóm 16.05), 01 hộp patê gan (nhóm 16.02), 01 hộp pho mát (nhóm 04.06), 01 hộp thịt lợn
+        muối xông khói cắt lát (nhóm 16.02) và 01 hộp xúc xích cocktail (Nhóm 16.01); hoặc
+        <br>- 01 chai rượu mạnh (nhóm 22.08) và 01 chai rượu vang (nhóm 22.04).
+        <br>Trong trường hợp 2 ví dụ nêu trên và các lựa chọn các hàng hóa tương tự, mỗi mặt hàng sẽ được phân loại
+        riêng biệt vào nhóm phù hợp với chính mặt hàng đó. Điều này cũng áp dụng, ví dụ, đối với cà phê hòa tan
+        trong một lọ thủy tinh (nhóm 21.01), một cốc gốm, sứ (nhóm 69.12) và một đĩa gốm, sứ (nhóm 69.12) được đóng
+        gói cùng nhau để bán lẻ trong một hộp bìa giấy.
+      </p>
+
+      <p>
+        (2) Bộ đồ làm đầu gồm: một tông đơ điện (nhóm 85.10), một cái lược (nhóm 96.15), một cái kéo (nhóm 82.13),
+        một bàn chải (nhóm 96.03) và một khăn mặt bằng vật liệu dệt (nhóm 63.02), đựng trong một cái túi bằng da
+        thuộc (nhóm 42.02): Phân loại vào nhóm 85.10.
+      </p>
+
+      <p>
+        (3) Bộ dụng cụ vẽ gồm: một thước (nhóm 90.17), một vòng tính (nhóm 90.17), một compa (nhóm 90.17), một bút
+        chì (nhóm 96.09) và cái vót bút chì (nhóm 82.14), đựng trong túi nhựa (nhóm 42.02): Phân loại vào nhóm 90.17.
+      </p>
+
+      <p>
+        Đối với các bộ sản phẩm nêu trên, việc phân loại căn cứ vào thành phần, hoặc các thành phần đi cùng với nhau,
+        mà mang đặc tính của cả bộ sản phẩm.
+      </p>
+
+      <p>
+        (XI) Quy tắc này không được áp dụng cho những hàng hóa bao gồm những thành phẩm được đóng gói riêng biệt và
+        có hoặc không được xếp cùng với nhau trong một bao chung với một tỷ lệ cố định cho sản xuất công nghiệp,
+        ví dụ như sản xuất đồ uống.
+      </p>
+
+      <p><strong>CHÚ GIẢI QUY TẮC 3 (c)</strong></p>
+
+      <p>
+        (XII) Khi không áp dụng được Quy tắc 3(a) hoặc 3(b), hàng hóa sẽ được phân loại theo Quy tắc 3(c). Theo Quy tắc
+        này thì hàng hóa sẽ được phân loại vào nhóm có thứ tự sau cùng trong số các nhóm cùng được xem xét để phân loại.
+      </p>
+    </div>
+    <!-- QUY TẮC 4 -->
+    <button type="button" class="rule-toggle" data-target="rule4">
+      Quy tắc 4 – Phân loại theo hàng giống nhất
+    </button>
+    <div id="rule4" class="rule-panel">
+      <p><strong>QUY TẮC 4</strong></p>
+
+      <p>
+        Hàng hóa không thể phân loại theo đúng các Quy tắc trên đây thì được phân loại
+        vào nhóm phù hợp với loại hàng hóa giống chúng nhất.
+      </p>
+
+      <p><strong>CHÚ GIẢI QUY TẮC 4</strong></p>
+
+      <p>
+        (I) Quy tắc này đề cập đến hàng hóa không thể phân loại theo Quy tắc 1 đến Quy tắc 3.
+        Quy tắc này quy định rằng những hàng hóa trên được phân loại vào nhóm phù hợp với
+        loại hàng hóa giống chúng nhất.
+      </p>
+
+      <p>
+        (II) Cách phân loại theo Quy tắc 4 đòi hỏi việc so sánh hàng hóa định phân loại với
+        hàng hóa tương tự đã được phân loại để xác định hàng hóa giống chúng nhất. Những hàng
+        hóa định phân loại sẽ được xếp cùng nhóm với hàng hóa giống chúng nhất.
+      </p>
+
+      <p>
+        (III) Xác định giống nhau có thể dựa trên nhiều yếu tố, ví dụ như mô tả, đặc điểm,
+        tính chất, mục đích sử dụng của hàng hóa.
+      </p>
+    </div>
+    <!-- QUY TẮC 5 -->
+    <button type="button" class="rule-toggle" data-target="rule5">
+      Quy tắc 5 – Phân loại bao bì đi kèm hàng hóa
+    </button>
+    <div id="rule5" class="rule-panel">
+      <p><strong>QUY TẮC 5</strong></p>
+
+      <p>
+        Những quy định sau được áp dụng cho những hàng hóa dưới đây:
+      </p>
+
+      <p>
+        (a) Hộp đựng camera, hộp đựng nhạc cụ, bao súng, hộp đựng dụng cụ vẽ,
+        hộp đựng đồ trang sức và các loại bao hộp tương tự, thích hợp hoặc có hình dạng
+        đặc biệt để chứa hàng hóa hoặc bộ hàng hóa xác định, có thể dùng trong thời gian dài
+        và đi kèm với sản phẩm khi bán, được phân loại cùng với những sản phẩm này. Tuy nhiên,
+        nguyên tắc này không được áp dụng đối với bao bì mang tính chất cơ bản nổi trội hơn
+        so với hàng hóa mà nó chứa đựng.
+      </p>
+
+      <p>
+        (b) Ngoài Quy tắc 5(a) nêu trên, bao bì đựng hàng hóa được phân loại cùng với hàng hóa
+        đó khi bao bì là loại thường được dùng cho loại hàng hóa đó. Tuy nhiên, nguyên tắc này
+        không áp dụng đối với các loại bao bì mà rõ ràng là phù hợp để dùng lặp lại.
+      </p>
+
+      <p><strong>CHÚ GIẢI QUY TẮC 5</strong></p>
+
+      <p><strong>CHÚ GIẢI QUY TẮC 5 (a)<br>
+        <em>(Hộp, túi, bao và các loại bao bì chứa đựng tương tự)</em></strong>
+      </p>
+
+      <p>
+        (I) Quy tắc này chỉ để áp dụng cho các bao bì ở các dạng sau:
+        <br>(1) thích hợp riêng hoặc có hình dạng đặc biệt để đựng một loại hàng hóa
+        hoặc bộ hàng hóa xác định, tức là bao bì được thiết kế đặc thù để chứa các hàng hóa đó,
+        một số loại bao bì có thể có hình dáng của hàng hóa mà nó chứa đựng;
+        <br>(2) có thể sử dụng lâu dài, tức là chúng được thiết kế để có độ bền dùng cùng
+        với hàng hóa ở trong. Những bao bì này cũng để bảo quản hàng hóa khi không sử dụng
+        (ví dụ, trong quá trình vận chuyển hoặc lưu trữ). Đặc tính này cho phép phân biệt chúng
+        với những loại bao bì đơn giản;
+        <br>(3) được trình bày với hàng hóa chứa đựng trong chúng, các hàng hóa này có thể được
+        đóng gói riêng hoặc không để thuận tiện cho việc vận chuyển. Trường hợp bao bì được trình
+        bày riêng lẻ được phân loại theo nhóm thích hợp với chúng;
+        <br>(4) là loại bao bì thường được bán với hàng hóa chứa đựng trong nó; và
+        <br>(5) không mang tính chất cơ bản của bộ hàng.
+      </p>
+
+      <p>
+        (II) Những ví dụ về bao bì đi kèm với hàng hóa và áp dụng Quy tắc này để phân loại:
+        <br>(1) Hộp đựng đồ trang sức (nhóm 71.13);
+        <br>(2) Bao đựng máy cạo râu bằng điện (nhóm 85.10);
+        <br>(3) Bao ống nhòm, hộp kính viễn vọng (nhóm 90.05);
+        <br>(4) Hộp, bao và túi đựng nhạc cụ (ví dụ, nhóm 92.02);
+        <br>(5) Bao súng (ví dụ, nhóm 93.03).
+      </p>
+
+      <p>
+        (III) Những ví dụ về bao bì không áp dụng Quy tắc này, có thể kể như:
+        hộp đựng chè bằng bạc, hoặc cốc gốm trang trí đựng đồ ngọt.
+      </p>
+
+      <p><strong>CHÚ GIẢI QUY TẮC 5 (b)<br>
+        <em>(Bao bì)</em></strong>
+      </p>
+
+      <p>
+        (IV) Quy tắc này quy định việc phân loại bao bì thường được dùng để đóng gói
+        chứa đựng hàng hóa. Tuy nhiên, Quy tắc này không áp dụng cho bao bì có thể dùng lặp lại,
+        ví dụ, trong trường hợp thùng kim loại hoặc bình sắt, thép đựng khí đốt dạng nén hoặc lỏng.
+      </p>
+
+      <p>
+        (V) Quy tắc này liên quan trực tiếp đến Quy tắc 5(a), bởi vậy, việc phân loại những bao,
+        túi và bao bì tương tự thuộc loại đã nêu tại Quy tắc 5(a) phải áp dụng đúng theo Quy tắc 5(a).
+      </p>
+    </div>
+    <!-- QUY TẮC 6 -->
+    <button type="button" class="rule-toggle" data-target="rule6">
+      Quy tắc 6 – Phân loại ở cấp độ phân nhóm (subheading)
+    </button>
+    <div id="rule6" class="rule-panel">
+      <p><strong>QUY TẮC 6</strong></p>
+
+      <p>
+        Để đảm bảo tính pháp lý, việc phân loại hàng hóa vào các phân nhóm của một nhóm phải được
+        xác định phù hợp theo nội dung của từng phân nhóm và các chú giải phân nhóm có liên quan,
+        và các Quy tắc trên với những sửa đổi về chi tiết cho thích hợp, trong điều kiện là chỉ có
+        những phân nhóm cùng cấp độ mới so sánh được. Theo Quy tắc này thì các chú giải phần và
+        chương có liên quan cũng được áp dụng, trừ khi nội dung mô tả trong phân nhóm có những yêu
+        cầu khác.
+      </p>
+
+      <p><strong>CHÚ GIẢI QUY TẮC 6</strong></p>
+
+      <p>
+        (I) Với những sửa đổi chi tiết cho thích hợp, các Quy tắc từ 1 đến 5 điều chỉnh việc phân loại
+        ở cấp độ phân nhóm trong cùng một nhóm.
+      </p>
+
+      <p>
+        (II) Theo Quy tắc 6, những cụm từ dưới đây có các nghĩa được quy định như sau:
+        <br>(a) “các phân nhóm cùng cấp độ”: phân nhóm một gạch (cấp độ 1) hoặc phân nhóm hai gạch
+        (cấp độ 2).
+        <br>Do đó, khi xem xét tính phù hợp của hai hay nhiều phân nhóm một gạch trong một nhóm theo
+        Quy tắc 3(a), tiêu chí mô tả đặc trưng hoặc tiêu chí xác định giống hàng hóa cần phân loại nhất
+        chỉ được đánh giá trên cơ sở nội dung của các phân nhóm một gạch có liên quan. Khi đã xác định
+        được phân nhóm một gạch có mô tả đặc trưng nhất thì phân nhóm một gạch đó được chọn và khi phân
+        nhóm một gạch đó được phân chia tiếp thì phải xem xét nội dung của các phân nhóm hai gạch để xác
+        định lựa chọn phân nhóm hai gạch phù hợp nhất cho hàng hóa cần phân loại.
+      </p>
+
+      <p>
+        (b) “trừ khi nội dung của phân nhóm có yêu cầu khác” có nghĩa là: trừ khi những chú giải của
+        Phần hoặc Chương có nội dung không phù hợp với nội dung của phân nhóm hàng hoặc Chú giải phân nhóm.
+        Ví dụ, tại Chương 71, định nghĩa về “bạch kim” nêu trong Chú giải 4(B) Chương 71 khác với Chú giải
+        phân nhóm 2 Chương 71. Do vậy, để giải thích các phân nhóm 7110.11 hoặc 7110.19, Chú giải phân nhóm 2
+        sẽ được áp dụng còn Chú giải 4(B) của Chương không được áp dụng.
+      </p>
+
+      <p>
+        (III) Phạm vi của phân nhóm hai gạch không vượt quá phạm vi của phân nhóm một gạch mà nó trực thuộc;
+        và phạm vi của phân nhóm một gạch không vượt quá phạm vi của nhóm mà phân nhóm một gạch đó trực thuộc.
+      </p>
+    </div>
+
+  </div>
+</section>
+
+  </div>
+</main>
+  </div>
+
+  <!-- POPUP OK -->
+  <div id="popupOverlay" class="popup-overlay">
+    <div class="popup-box">
+      <p id="popupMessage"></p>
+      <button id="popupOk" class="popup-btn">OK</button>
+    </div>
+  </div>
+
+  <script>
+const btn = document.getElementById('btn');
+const result = document.getElementById('result');
+const desc = document.getElementById('desc');
+
+const sidebar = document.getElementById('sidebar');
+const toggleSidebarBtn = document.getElementById('toggleSidebar');
+const newChatBtn = document.getElementById('newChat');
+const menuPolicyBtn = document.getElementById('menu-policy');
+const app = document.querySelector('.app');
+// THÊM MỚI: nút menu & 2 trang
+const menuTraHsBtn = document.getElementById('menu-tra-hs');
+const menuRulesBtn = document.getElementById('menu-rules');
+const pageHs = document.getElementById('page-hs');
+const pageRules = document.getElementById('page-rules');
+
+    // Popup OK
+    const popupOverlay = document.getElementById('popupOverlay');
+    const popupMessage = document.getElementById('popupMessage');
+    const popupOk = document.getElementById('popupOk');
+
+    function showPopup(msg) {
+      popupMessage.textContent = msg;
+      popupOverlay.style.display = 'flex';
+    }
+
+    popupOk.addEventListener('click', () => {
+      popupOverlay.style.display = 'none';
+    });
+
+// Mở/đóng sidebar
+toggleSidebarBtn.addEventListener('click', () => {
+  sidebar.classList.toggle('open');
+  app.classList.toggle('sidebar-open');  // báo cho .app biết là sidebar đang mở
+});
+
+    // New chat
+    newChatBtn.addEventListener('click', () => {
+      desc.value = '';
+      result.textContent = '';
+      desc.focus();
+    });
+// 1/ Tra HS code -> quay lại trang tra HS
+menuTraHsBtn.addEventListener('click', () => {
+  pageHs.style.display = 'block';
+  pageRules.style.display = 'none';
+  sidebar.classList.remove('open');
+  app.classList.remove('sidebar-open');   // THÊM DÒNG NÀY
+});
+
+// 1e/ Sáu quy tắc HS code -> mở trang quy tắc
+menuRulesBtn.addEventListener('click', () => {
+  pageHs.style.display = 'none';
+  pageRules.style.display = 'block';
+  sidebar.classList.remove('open');
+  app.classList.remove('sidebar-open');   // THÊM DÒNG NÀY
+});
+
+    // 2/ Check chính sách mặt hàng
+menuPolicyBtn.addEventListener('click', () => {
+  showPopup('Chưa có mở đâu, tham lam quá à, tra đỡ HS code trước y.');
+  sidebar.classList.remove('open');
+  app.classList.remove('sidebar-open');   // THÊM DÒNG NÀY
+});
+// Accordion cho Sáu quy tắc (mở / đóng khi nhấn vào tiêu đề)
+const ruleToggles = document.querySelectorAll('.rule-toggle');
+
+ruleToggles.forEach((btnToggle) => {
+  btnToggle.addEventListener('click', () => {
+    const targetId = btnToggle.getAttribute('data-target');
+    const panel = document.getElementById(targetId);
+    if (!panel) return;
+
+    const isOpen = panel.style.display === 'block';
+
+    // nếu đang mở thì thu gọn
+    if (isOpen) {
+      panel.style.display = 'none';
+      btnToggle.classList.remove('active');
+    } else {
+      panel.style.display = 'block';
+      btnToggle.classList.add('active');
+    }
+  });
+});
+
+    btn.addEventListener('click', async () => {
+      const text = desc.value.trim();
+      if (!text) {
+        alert('Nhập mô tả hàng hóa trước đã!');
+        return;
+      }
+
+      result.textContent = 'Đang tra...';
+
+      try {
+        const res = await fetch('https://YOUR_N8N_DOMAIN/webhook/hs-code-bot', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ description: text })
+        });
+
+        if (!res.ok) {
+          throw new Error('API trả lỗi status ' + res.status);
+        }
+
+        const data = await res.json();
+
+        let txt = 'Ứng viên HS:\n';
+        if (Array.isArray(data.candidates)) {
+          data.candidates.forEach((c, i) => {
+            txt += `${i + 1}. ${c.hs} – ${c.percent}%\n`;
+          });
+        } else {
+          txt += '(Không có dữ liệu ứng viên)\n';
+        }
+
+        txt += '\nThông tin còn thiếu:\n';
+        if (Array.isArray(data.missing_info) && data.missing_info.length > 0) {
+          data.missing_info.forEach((m) => {
+            txt += `- ${m}\n`;
+          });
+        } else {
+          txt += '(Không có ghi chú thông tin thiếu)\n';
+        }
+
+        result.textContent = txt;
+      } catch (err) {
+        console.error(err);
+        result.textContent = 'Hết xèng để chạy hệ thống roài, bạn quay lại sau nha, để tối về admin nạp xèng đã.';
+      }
+    });
+  </script>
 </body>
 </html>
