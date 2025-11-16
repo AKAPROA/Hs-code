@@ -1124,36 +1124,19 @@ btn.addEventListener('click', async () => {
 const res = await fetch('https://lataiworld.app.n8n.cloud/webhook/hs-code-webhook', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ description: text })
+  body: JSON.stringify({ message: text })   // ⬅ đổi từ description → message
 });
 
     if (!res.ok) {
       throw new Error('API trả lỗi status ' + res.status);
     }
 
-    const data = await res.json();
+const data = await res.json();
 
-    // 4) Ghép text trả lời
-    let txt = 'Ứng viên HS:\n';
-    if (Array.isArray(data.candidates)) {
-      data.candidates.forEach((c, i) => {
-        txt += `${i + 1}. ${c.hs} – ${c.percent}%\n`;
-      });
-    } else {
-      txt += '(Không có dữ liệu ứng viên)\n';
-    }
+// n8n đang trả dạng: { success: true, response: '....', timestamp: '....' }
+const replyText = data.response || 'Không nhận được output từ workflow.';
 
-    txt += '\nThông tin còn thiếu:\n';
-    if (Array.isArray(data.missing_info) && data.missing_info.length > 0) {
-      data.missing_info.forEach((m) => {
-        txt += `- ${m}\n`;
-      });
-    } else {
-      txt += '(Không có ghi chú thông tin thiếu)\n';
-    }
-
-    // 5) Cập nhật lại bong bóng BOT đang "Đang tra..." thành nội dung thật
-    loadingMsg.textContent = txt;
+loadingMsg.textContent = replyText;
   } catch (err) {
     console.error(err);
     loadingMsg.textContent = 'Hết xèng để chạy hệ thống roài, bạn quay lại sau nha, để tối về admin nạp xèng đã.';
