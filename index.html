@@ -302,6 +302,7 @@
 .chat-messages {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;   /* không cho kéo ngang */
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -326,7 +327,9 @@
   padding: 8px 10px;
   border-radius: 10px;
   font-size: 14px;
-  white-space: pre-wrap;
+  white-space: pre-wrap;      /* giữ xuống dòng như cũ */
+  word-break: break-all;      /* bẻ luôn cả chuỗi không có dấu cách */
+  overflow-wrap: anywhere;    /* ép xuống dòng nếu cần */
 }
 
 .message-user {
