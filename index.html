@@ -393,7 +393,7 @@
   </div>
 
   <p class="intro">
-    Nhập mô tả hàng hóa, hệ thống sẽ gợi ý mã HS. Mỗi lần gửi sẽ tạo một đoạn hội thoại mới.
+    Nhập mô tả hàng hóa, hệ thống sẽ gợi ý mã HS.
   </p>
 
   <div class="chat-box">
@@ -990,6 +990,11 @@
 const btn = document.getElementById('btn');
 const desc = document.getElementById('desc');
 const chatMessages = document.getElementById('chatMessages');
+
+// ⚡ THÊM 2 DÒNG NÀY
+let hasHiddenIntro = false;                 // đánh dấu đã ẩn intro chưa
+const intro = document.querySelector('.intro');  // đoạn mô tả phía trên chat
+
 function appendMessage(role, text) {
   const wrap = document.createElement('div');
   wrap.classList.add('message');
@@ -1057,6 +1062,13 @@ toggleSidebarBtn.addEventListener('click', () => {
 newChatBtn.addEventListener('click', () => {
   desc.value = '';
   chatMessages.innerHTML = '';
+
+  // ⚡ HIỆN LẠI INTRO MỖI KHI BẮT ĐẦU CHAT MỚI
+  if (intro) {
+    intro.style.display = 'block';
+  }
+  hasHiddenIntro = false;
+
   appendMessage('bot', 'Bắt đầu cuộc trò chuyện mới. Hãy nhập mô tả hàng hóa để tra HS code.');
   desc.focus();
 });
@@ -1109,6 +1121,18 @@ btn.addEventListener('click', async () => {
   if (!text) {
     alert('Nhập mô tả hàng hóa trước đã!');
     return;
+  }
+
+  // ⚡ LẦN GỬI ĐẦU TIÊN: ẨN INTRO + CÂU CHÀO MẶC ĐỊNH
+  if (!hasHiddenIntro) {
+    if (intro) {
+      intro.style.display = 'none';
+    }
+    const firstBot = chatMessages.querySelector('.message-bot');
+    if (firstBot) {
+      firstBot.style.display = 'none';
+    }
+    hasHiddenIntro = true;
   }
 
   // 1) Thêm tin nhắn USER lên khung chat
