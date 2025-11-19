@@ -997,6 +997,17 @@ const chatMessages = document.getElementById('chatMessages');
 // ⚡ THÊM 2 DÒNG NÀY
 let hasHiddenIntro = false;                 // đánh dấu đã ẩn intro chưa
 const intro = document.querySelector('.intro');  // đoạn mô tả phía trên chat
+// ⚡ SINH ID PHIÊN CHAT (ConvID) GỬI LÊN N8N
+function generateSessionId() {
+  if (window.crypto && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  // fallback nếu trình duyệt không có randomUUID
+  return 'sess-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
+}
+
+// ID đang dùng cho cuộc chat hiện tại (trùng với ConvID bên Google Sheet)
+let currentSessionId = generateSessionId();
 
 function appendMessage(role, text) {
   const wrap = document.createElement('div');
@@ -1063,6 +1074,9 @@ toggleSidebarBtn.addEventListener('click', () => {
 
 // New chat
 newChatBtn.addEventListener('click', () => {
+  // 👉 TẠO ConvID MỚI CHO CUỘC CHAT MỚI
+  currentSessionId = generateSessionId();
+
   desc.value = '';
   chatMessages.innerHTML = '';
 
@@ -1148,10 +1162,16 @@ btn.addEventListener('click', async () => {
   try {
     // 3) Gửi sang webhook n8n của bạn
 // 3) Gửi sang webhook n8n của bạn
+const payload = {
+  message: text,
+  sessionId: currentSessionId,   // 👉 gửi ConvID hiện tại
+  messageId: Date.now()          // (tuỳ bạn, có thể dùng làm Turn hoặc bỏ)
+};
+
 const res = await fetch('https://lataiworld.app.n8n.cloud/webhook/hs-code-webhook', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ message: text })   // ⬅ đổi từ description → message
+  body: JSON.stringify(payload)
 });
 
     if (!res.ok) {
